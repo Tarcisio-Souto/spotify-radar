@@ -1,0 +1,70 @@
+version: '3.8'
+services:
+
+  # imagem sptf_radar
+  sptf_radar:
+    build:
+      args:
+        user: tss
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: sptf_radar-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - net_sptf_radar
+
+  #nginx
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/:/etc/nginx/conf.d/
+    networks:
+      - net_sptf_radar
+
+  # Mongo DB - db_sptf_radar
+  db_sptf_radar:
+    image: mongo
+    restart: always
+    container_name: sptf_radar_db
+    env_file:
+      - ./sptfdb.env
+    environment:
+      TZ: America/Sao_Paulo
+    ports:
+      - 5017:27017
+    volumes:
+      - ./data/db:/data/db
+    networks:
+      - net_sptf_radar
+
+
+  # Mongo DB Express - db_sptf_radar
+  db_sptf_radar_exp:
+    image: mongo-express
+    restart: always
+    container_name: sptf_radar_exp
+    env_file:
+      - ./sptfexp.env
+    ports:
+      - 5081:8081
+    depends_on:
+      - db_sptf_radar
+    links:
+      - db_sptf_radar
+    volumes:
+      - ./data/db:/data/db
+    networks:
+      - net_sptf_radar
+
+
+networks:
+  net_sptf_radar:
+    driver: bridge
